@@ -8,7 +8,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 CSV_FILE = "orders.csv"
 
 def init_csv():
-    """Create CSV file if it does not exist."""
     try:
         pd.read_csv(CSV_FILE)
     except FileNotFoundError:
@@ -20,11 +19,9 @@ def init_csv():
         df.to_csv(CSV_FILE, index=False)
 
 def load_data():
-    """Load order data from CSV."""
     return pd.read_csv(CSV_FILE)
 
 def export_charts_to_pdf(figures):
-    """Export matplotlib figures to a PDF."""
     pdf_bytes = BytesIO()
     with PdfPages(pdf_bytes) as pdf:
         for fig in figures:
@@ -133,6 +130,19 @@ def summary_dashboard(data):
     pdf_file = export_charts_to_pdf(figs)
     st.download_button("📄 Download Dashboard Charts (PDF)", data=pdf_file, file_name="dashboard_charts.pdf", mime="application/pdf")
 
+def safe_int(value, default=1):
+    try:
+        return int(float(value))
+    except (ValueError, TypeError):
+        return default
+
+def safe_float(value, default=0.0):
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
 def main():
     st.set_page_config(page_title="Order Manager", layout="wide")
     st.title("🛍️ Order Management System")
@@ -210,18 +220,23 @@ def main():
                     name = col1.text_input("Customer Name", row["Customer Name"])
                     number = col2.text_input("Contact Number", row["Number"])
                     order = st.text_input("Order", row["Order"])
-                    quantity = st.number_input("Quantity", value=int(row["Quantity"]), step=1)
+                    quantity = st.number_input("Quantity", value=safe_int(row.get("Quantity")), step=1)
                     nameset = st.text_input("Nameset", row["Nameset"])
 
                     col3, col4 = st.columns(2)
-                    cost = col3.number_input("Cost Price", value=float(row["Cost Price"]), step=0.1)
-                    sale = col4.number_input("Sale Price", value=float(row["Sale Price"]), step=0.1)
+                    cost = col3.number_input("Cost Price", value=safe_float(row.get("Cost Price")), step=0.1)
+                    sale = col4.number_input("Sale Price", value=safe_float(row.get("Sale Price")), step=0.1)
                     profit = sale - cost
 
                     status = st.selectbox("Order Status", ["Pending", "In Production", "Shipped", "Delivered", "Cancelled"], index=["Pending", "In Production", "Shipped", "Delivered", "Cancelled"].index(row["Order Status"]))
                     payment = st.selectbox("Payment Status", ["Unpaid", "Partially Paid", "Paid"], index=["Unpaid", "Partially Paid", "Paid"].index(row["Payment Status"]))
                     tracking = st.text_input("Tracking Info", row["Tracking Detail"])
-                    date = st.date_input("Order Date", value=pd.to_datetime(row["Date"]).date())
+                    try:
+                        date_value = pd.to_datetime(row.get("Date"), errors="coerce").date()
+                    except Exception:
+                        date_value = pd.to_datetime("today").date()
+
+                    date = st.date_input("Order Date", value=date_value)
 
                     col_save, col_delete = st.columns(2)
                     save = col_save.form_submit_button("💾 Save")
