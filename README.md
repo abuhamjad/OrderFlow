@@ -25,10 +25,10 @@ This is a fully functional **Order Management System** built with **Streamlit** 
 ---
 
 ## 📂 File Structure
-  📦 OrderTracker
-  ├── 📄 app.py # Main Streamlit app file
-  ├── 📄 orders.csv # Order database file (auto-created)
-  ├── 📄 README.md
+  - 📦 OrderTracker
+  - ├── 📄 app.py # Main Streamlit app file
+  - ├── 📄 orders.csv # Order database file (auto-created)
+  - ├── 📄 README.md
 
 ---
 
@@ -55,6 +55,6 @@ streamlit run app.py
 This project is open-source and free to use. Feel free to modify and customize it for your own use.
 
 ### Author
-Developed by Abu Huraira
-Contact: abuh.amajd14@gmail.com
+- Developed by Abu Huraira
+- Contact: abuh.amajd14@gmail.com
 
