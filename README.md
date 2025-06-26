@@ -1,20 +1,18 @@
-# 🛍️ Order Management System (Streamlit App)
+# OrderFlow
 
-This is a fully functional **Order Management System** built with **Streamlit** and **Pandas**, designed to help small businesses, freelancers, or shop owners manage, track, and analyze customer orders efficiently.
+**OrderFlow** is a simple and efficient **Order Management System (OMS)** built using Streamlit. Ideal for small businesses and freelancers to manage and analyze customer orders with ease.
 
-## 🚀 Features
+## Features
 
-- **📝 Add, Edit, and Delete Orders**
-- **📥 Import Orders from CSV Files**
-- **📂 Export Data to CSV/Excel**
-- **📊 Dashboard with Monthly Sales, Profits, and Graphs**
-- **📄 PDF Export of Charts**
-- **📌 Insights on Best Month, Best-Selling Product, and Averages**
-- **📅 Automatically Tracks Monthly Trends**
-- **✅ Simple, Clean, and Interactive UI**
+- Add, edit, and delete orders  
+- Import/export orders (CSV, Excel)  
+- Interactive sales dashboard with charts  
+- PDF export of graphs  
+- Highlights top months and products  
+- Auto-tracks monthly trends
 
 
-## 🧑‍💻 Tech Stack
+## Tools Used
 
 - [Streamlit](https://streamlit.io/) – for building the interactive web UI
 - [Pandas](https://pandas.pydata.org/) – for data manipulation
@@ -54,7 +52,7 @@ streamlit run app.py
 ### 📝 License
 This project is open-source and free to use. Feel free to modify and customize it for your own use.
 
-### Author
-- Developed by Abu Huraira
-- Contact: abuh.amajd14@gmail.com
+## Author
+**Abu Huraira**  
+[abuh.amajd14@gmail.com](mailto:abuh.amajd14@gmail.com)
 
