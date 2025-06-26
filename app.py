@@ -65,6 +65,10 @@ def summary_dashboard(data):
 
     # Summary metrics
     total_orders = len(data)
+    data["Quantity"] = pd.to_numeric(data["Quantity"], errors="coerce")
+    data["Profit"] = pd.to_numeric(data["Profit"], errors="coerce")
+    data["Sale Price"] = pd.to_numeric(data["Sale Price"], errors="coerce")
+
     total_quantity = data["Quantity"].sum()
     total_profit = data["Profit"].sum()
     total_sales = data["Sale Price"].sum()
@@ -228,8 +232,20 @@ def main():
                     sale = col4.number_input("Sale Price", value=safe_float(row.get("Sale Price")), step=0.1)
                     profit = sale - cost
 
-                    status = st.selectbox("Order Status", ["Pending", "In Production", "Shipped", "Delivered", "Cancelled"], index=["Pending", "In Production", "Shipped", "Delivered", "Cancelled"].index(row["Order Status"]))
-                    payment = st.selectbox("Payment Status", ["Unpaid", "Partially Paid", "Paid"], index=["Unpaid", "Partially Paid", "Paid"].index(row["Payment Status"]))
+                    order_status_options = ["Pending", "In Production", "Shipped", "Delivered", "Cancelled"]
+                    try:
+                        status_index = order_status_options.index(str(row.get("Order Status", "")).strip())
+                    except ValueError:
+                        status_index = 0
+                    status = st.selectbox("Order Status", order_status_options, index=status_index)
+
+                    payment_status_options = ["Unpaid", "Partially Paid", "Paid"]
+                    try:
+                        payment_index = payment_status_options.index(str(row.get("Payment Status", "")).strip())
+                    except ValueError:
+                        payment_index = 0
+                    payment = st.selectbox("Payment Status", payment_status_options, index=payment_index)
+
                     tracking = st.text_input("Tracking Info", row["Tracking Detail"])
                     try:
                         date_value = pd.to_datetime(row.get("Date"), errors="coerce").date()
@@ -237,7 +253,6 @@ def main():
                         date_value = pd.to_datetime("today").date()
 
                     date = st.date_input("Order Date", value=date_value)
-
                     col_save, col_delete = st.columns(2)
                     save = col_save.form_submit_button("💾 Save")
                     delete = col_delete.form_submit_button("🗑️ Delete")
