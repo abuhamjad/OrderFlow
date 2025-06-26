@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.backends.backend_pdf import PdfPages
+import gspread
+from gspread_dataframe import get_as_dataframe, set_with_dataframe
+from oauth2client.service_account import ServiceAccountCredentials
+
 
 CSV_FILE = "orders.csv"
 
@@ -20,8 +24,18 @@ def init_csv():
         df.to_csv(CSV_FILE, index=False)
 
 def load_data():
-    """Load order data from CSV."""
-    return pd.read_csv(CSV_FILE)
+    try:
+        client = get_gsheet_client()
+        sheet = client.open("OrderData").sheet1  # Your sheet name
+        df = get_as_dataframe(sheet).dropna(how='all')  # Clean blank rows
+        return df
+    except Exception as e:
+        st.error(f"Error loading data from Google Sheets: {e}")
+        return pd.DataFrame(columns=[
+            "Customer Name", "Number", "Order", "Quantity", "Nameset",
+            "Cost Price", "Sale Price", "Profit",
+            "Order Status", "Payment Status", "Tracking Detail", "Date"
+        ])
 
 def export_charts_to_pdf(figures):
     """Export matplotlib figures to a PDF."""
@@ -33,7 +47,15 @@ def export_charts_to_pdf(figures):
     return pdf_bytes
 
 def save_data(entry):
-    df = pd.DataFrame([entry])
+    df = load_data()
+    df = pd.concat([df, pd.DataFrame([entry])], ignore_index=True)
+
+    try:
+        client = get_gsheet_client()
+        sheet = client.open("OrderData").sheet1
+        set_with_dataframe(sheet, df)
+    except Exception as e:
+        st.error(f"Error saving to Google Sheets: {e}")
     
     # Add today's date if not already present
     df["Date"] = pd.to_datetime("today").normalize()
@@ -132,6 +154,15 @@ def summary_dashboard(data):
 
     pdf_file = export_charts_to_pdf(figs)
     st.download_button("📄 Download Dashboard Charts (PDF)", data=pdf_file, file_name="dashboard_charts.pdf", mime="application/pdf")
+
+def get_gsheet_client():
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    client = gspread.authorize(creds)
+    return client
 
 def main():
     st.set_page_config(page_title="Order Manager", layout="wide")
