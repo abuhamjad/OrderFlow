@@ -147,14 +147,13 @@ def main():
         data["Date"] = pd.to_datetime(data["Date"], errors="coerce")
     data.fillna({"Date": pd.to_datetime("today")}, inplace=True)
 
-    # --- Tabs ---
     tab1, tab2, tab3 = st.tabs(["📝 Manage Orders", "📊 Dashboard", "📂 Import Orders"])
 
-    # --- TAB 1: Manage Orders ---
+    # TAB 1: Manage Orders
     with tab1:
         subtab1, subtab2, subtab3 = st.tabs(["➕ Add Order", "✏️ Edit/Delete", "📋 All Orders"])
 
-        # ➕ Add Order
+        # Add Order
         with subtab1:
             st.header("➕ Add New Order")
             with st.form("add_order_form"):
@@ -198,7 +197,7 @@ def main():
                     else:
                         st.error("❌ Please fill in required fields.")
 
-        # ✏️ Edit/Delete Orders
+        # Edit/Delete Orders
         with subtab2:
             st.header("✏️ Edit / Delete Orders")
 
@@ -243,7 +242,7 @@ def main():
             else:
                 st.info("ℹ️ No orders to modify.")
 
-        # 📋 All Orders
+        # All Orders
         with subtab3:
             st.header("📋 All Orders")
             df_display = data.reset_index(drop=True)
@@ -257,11 +256,11 @@ def main():
             st.download_button("⬇️ Download CSV", csv, file_name="orders.csv", mime="text/csv")
             st.download_button("⬇️ Download Excel", xlsx, file_name="orders.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-    # --- TAB 2: Dashboard ---
+    # TAB 2: Dashboard
     with tab2:
         summary_dashboard(data)
 
-    # --- TAB 3: Import Orders ---
+    # TAB 3: Import Orders
     with tab3:
         st.header("📂 Import Orders from CSV")
 
@@ -297,7 +296,6 @@ def main():
                     st.error("❌ Column structure mismatch. Use the provided template.")
             except Exception as e:
                 st.error(f"❌ Error reading file: {e}")
-
-# ---------- Run App ----------
+                
 if __name__ == "__main__":
     main()
