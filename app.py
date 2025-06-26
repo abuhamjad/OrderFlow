@@ -5,7 +5,10 @@ from io import BytesIO
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.backends.backend_pdf import PdfPages
 
-CSV_FILE = "orders.csv"
+query_params = st.query_params
+IS_TEST = query_params.get("test", "0") == "1"
+
+CSV_FILE = "sample_orders.csv" if IS_TEST else "orders.csv"
 
 def init_csv():
     try:
@@ -150,6 +153,9 @@ def safe_float(value, default=0.0):
 def main():
     st.set_page_config(page_title="Order Manager", layout="wide")
     st.title("🛍️ Order Management System")
+
+    if IS_TEST:
+        st.warning("You are currently running in TEST MODE. Data changes will not affect the live system.")
 
     init_csv()
     data = load_data()
