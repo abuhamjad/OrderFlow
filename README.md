@@ -22,15 +22,15 @@
 
 ---
 
-## 📂 File Structure
-  - 📦 OrderTracker
+## File Structure
+OrderTracker
   - ├── 📄 app.py # Main Streamlit app file
   - ├── 📄 orders.csv # Order database file (auto-created)
   - ├── 📄 README.md
 
 ---
 
-## ▶️ Getting Started
+## Getting Started
 
 ### 1. Clone the Repository
 
@@ -49,7 +49,7 @@ pip install streamlit pandas matplotlib openpyxl
 streamlit run app.py
 ```
 
-### 📝 License
+### License
 This project is open-source and free to use. Feel free to modify and customize it for your own use.
 
 ## Author
