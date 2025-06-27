@@ -2,7 +2,10 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
-CSV_FILE = "orders.csv"
+query_params = st.query_params
+IS_TEST = query_params.get("test", "0") == "1"
+
+CSV_FILE = "sample_orders.csv" if IS_TEST else "orders.csv"
 
 def init_csv():
     try:
@@ -149,6 +152,9 @@ def main():
     st.set_page_config(page_title="Order Manager", layout="wide")
     st.title("Order Flow")
 
+    if IS_TEST:
+        st.warning("You are currently running in TEST MODE. Data changes will not affect the live system.")
+
     init_csv()
     data = load_data()
 
@@ -214,38 +220,7 @@ def main():
             st.header("Edit / Delete Orders")
 
             if not data.empty:
-            
-                st.write("### Delete Multiple Orders")
-
-                # Let user select multiple rows to delete
-                selected_rows = st.multiselect(
-                    "Select Orders to Delete",
-                    options=data.index,
-                    format_func=lambda x: f"{x+1} - {data.loc[x, 'Customer Name']} | {data.loc[x, 'Order']}"
-                )
-
-                if selected_rows:
-                    st.warning(f"You're about to delete {len(selected_rows)} order(s).")
-
-                    if st.button("Confirm Delete Selected"):
-                        # Drop selected rows
-                        data.drop(index=selected_rows, inplace=True)
-                        data.to_csv(CSV_FILE, index=False)
-                        st.success(f"Deleted {len(selected_rows)} order(s).")
-
-                        # Reload data after deletion
-                        data = load_data()
-
-                st.divider()
-
-                # Existing single-row edit logic remains
-                st.write("### Edit Single Order")
-
-                row_id = st.selectbox(
-                    "Select Entry to Edit",
-                    options=data.index,
-                    format_func=lambda x: f"{x+1} - {data.loc[x, 'Customer Name']}"
-                )
+                row_id = st.selectbox("Select Entry to Edit/Delete", options=data.index, format_func=lambda x: f"{x+1} - {data.loc[x, 'Customer Name']}")
                 row = data.loc[row_id]
 
                 with st.form("edit_form"):
