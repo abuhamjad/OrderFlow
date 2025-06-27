@@ -57,7 +57,7 @@ def to_excel(df):
     return output.getvalue()
 
 def summary_dashboard(data):
-    st.subheader("📈 Summary Dashboard")
+    st.subheader("Summary Dashboard")
 
     # Parse and ensure datetime
     if "Date" not in data.columns or data["Date"].isnull().all():
@@ -79,10 +79,10 @@ def summary_dashboard(data):
     total_sales = data["Sale Price"].sum()
 
     st.markdown(f"""
-    - 🧾 **Total Orders:** {total_orders}
-    - 📦 **Total Quantity Ordered:** {total_quantity}
-    - 💰 **Total Sales:** ₹{total_sales:,.2f}
-    - 📈 **Total Profit:** ₹{total_profit:,.2f}
+    - **Total Orders:** {total_orders}
+    - **Total Quantity Ordered:** {total_quantity}
+    - **Total Sales:** ₹{total_sales:,.2f}
+    - **Total Profit:** ₹{total_profit:,.2f}
     """)
 
     figs = []
@@ -118,7 +118,7 @@ def summary_dashboard(data):
         figs.append(fig2)
 
     # --------- Textual Insights ----------
-    st.markdown("## 📌 Insights")
+    st.markdown("Insights")
 
     if not monthly_summary.empty:
         most_orders_month = monthly_summary.loc[monthly_summary["Total Orders"].idxmax(), "Month"]
@@ -128,16 +128,16 @@ def summary_dashboard(data):
         best_selling_item = data["Order"].value_counts().idxmax()
         avg_price = data[data["Order"] == best_selling_item]["Sale Price"].mean()
 
-        st.write(f"📅 **Month with Most Sales:** `{most_orders_month}`")
-        st.write(f"🏆 **Best-Selling Product:** `{best_selling_item}`")
-        st.write(f"💸 **Average Sale Price of Best-Seller:** ₹{avg_price:.2f}")
-        st.write(f"📦 **Total Quantity Sold in Best Month:** {total_qty}")
-        st.write(f"💰 **Total Profit in Best Month:** ₹{total_profit_month:,.2f}")
+        st.write(f"**Month with Most Sales:** `{most_orders_month}`")
+        st.write(f"**Best-Selling Product:** `{best_selling_item}`")
+        st.write(f"**Average Sale Price of Best-Seller:** ₹{avg_price:.2f}")
+        st.write(f"**Total Quantity Sold in Best Month:** {total_qty}")
+        st.write(f"**Total Profit in Best Month:** ₹{total_profit_month:,.2f}")
     else:
-        st.info("ℹ️ Not enough data to generate monthly summary.")
+        st.info("ℹNot enough data to generate monthly summary.")
 
     pdf_file = export_charts_to_pdf(figs)
-    st.download_button("📄 Download Dashboard Charts (PDF)", data=pdf_file, file_name="dashboard_charts.pdf", mime="application/pdf")
+    st.download_button("Download Dashboard Charts (PDF)", data=pdf_file, file_name="dashboard_charts.pdf", mime="application/pdf")
 
 def safe_int(value, default=1):
     try:
@@ -154,7 +154,7 @@ def safe_float(value, default=0.0):
 
 def main():
     st.set_page_config(page_title="Order Manager", layout="wide")
-    st.title("🛍️ Order Management System")
+    st.title("Order Flow")
 
     init_csv()
     data = load_data()
@@ -166,15 +166,15 @@ def main():
         data["Date"] = pd.to_datetime(data["Date"], errors="coerce")
     data.fillna({"Date": pd.to_datetime("today")}, inplace=True)
 
-    tab1, tab2, tab3 = st.tabs(["📝 Manage Orders", "📊 Dashboard", "📂 Import Orders"])
+    tab1, tab2, tab3 = st.tabs(["Manage Orders", "Dashboard", "Import Orders"])
 
     # TAB 1: Manage Orders
     with tab1:
-        subtab1, subtab2, subtab3 = st.tabs(["➕ Add Order", "✏️ Edit/Delete", "📋 All Orders"])
+        subtab1, subtab2, subtab3 = st.tabs(["Add Order", "Edit/Delete", "All Orders"])
 
         # Add Order
         with subtab1:
-            st.header("➕ Add New Order")
+            st.header("Add New Order")
             with st.form("add_order_form"):
                 col1, col2 = st.columns(2)
                 name = col1.text_input("Customer Name")
@@ -213,13 +213,13 @@ def main():
                             "Date": pd.to_datetime(date)
                         }
                         save_data([new_entry])
-                        st.success("✅ Order Added!")
+                        st.success("Order Added!")
                     else:
-                        st.error("❌ Please fill in required fields.")
+                        st.error("Please fill in required fields.")
 
         # Edit/Delete Orders
         with subtab2:
-            st.header("✏️ Edit / Delete Orders")
+            st.header("Edit / Delete Orders")
 
             if not data.empty:
                 row_id = st.selectbox("Select Entry to Edit/Delete", options=data.index, format_func=lambda x: f"{x+1} - {data.loc[x, 'Customer Name']}")
@@ -260,8 +260,8 @@ def main():
 
                     date = st.date_input("Order Date", value=date_value)
                     col_save, col_delete = st.columns(2)
-                    save = col_save.form_submit_button("💾 Save")
-                    delete = col_delete.form_submit_button("🗑️ Delete")
+                    save = col_save.form_submit_button("Save")
+                    delete = col_delete.form_submit_button("Delete")
 
                     if save:
                         data.loc[row_id] = [
@@ -269,18 +269,18 @@ def main():
                             cost, sale, profit, status, payment, tracking, pd.to_datetime(date)
                         ]
                         data.to_csv(CSV_FILE, index=False)
-                        st.success("✅ Order Updated!")
+                        st.success("Order Updated!")
 
                     if delete:
                         data = data.drop(index=row_id)
                         data.to_csv(CSV_FILE, index=False)
-                        st.warning("⚠️ Order Deleted")
+                        st.warning("Order Deleted")
             else:
-                st.info("ℹ️ No orders to modify.")
+                st.info("ℹNo orders to modify.")
 
         # All Orders
         with subtab3:
-            st.header("📋 All Orders")
+            st.header("All Orders")
             df_display = data.reset_index(drop=True)
             df_display.index += 1  # Start from 1
             st.dataframe(df_display)
@@ -289,8 +289,8 @@ def main():
             csv = df_display.to_csv(index=False).encode('utf-8')
             xlsx = to_excel(df_display)
 
-            st.download_button("⬇️ Download CSV", csv, file_name="orders.csv", mime="text/csv")
-            st.download_button("⬇️ Download Excel", xlsx, file_name="orders.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button("Download CSV", csv, file_name="orders.csv", mime="text/csv")
+            st.download_button("Download Excel", xlsx, file_name="orders.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     # TAB 2: Dashboard
     with tab2:
@@ -298,10 +298,10 @@ def main():
 
     # TAB 3: Import Orders
     with tab3:
-        st.header("📂 Import Orders from CSV")
+        st.header("Import Orders from CSV")
 
         st.download_button(
-            label="⬇️ Download CSV Template",
+            label="Download CSV Template",
             data=pd.DataFrame(columns=[
                 "Customer Name", "Number", "Order", "Quantity", "Nameset",
                 "Cost Price", "Sale Price", "Profit",
@@ -324,14 +324,14 @@ def main():
                 ]
 
                 if list(uploaded_df.columns) == expected_cols:
-                    if st.button("📥 Import Orders"):
+                    if st.button("Import Orders"):
                         combined = pd.concat([data, uploaded_df], ignore_index=True)
                         combined.to_csv(CSV_FILE, index=False)
-                        st.success("✅ Orders Imported Successfully!")
+                        st.success("Orders Imported Successfully!")
                 else:
-                    st.error("❌ Column structure mismatch. Use the provided template.")
+                    st.error("Column structure mismatch. Use the provided template.")
             except Exception as e:
-                st.error(f"❌ Error reading file: {e}")
+                st.error(f"Error reading file: {e}")
                 
 if __name__ == "__main__":
     main()
