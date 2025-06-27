@@ -1,9 +1,6 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from io import BytesIO
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.backends.backend_pdf import PdfPages
 
 CSV_FILE = "orders.csv"
 
@@ -12,28 +9,22 @@ def init_csv():
         pd.read_csv(CSV_FILE)
     except FileNotFoundError:
         df = pd.DataFrame(columns=[
-            "Customer Name", "Number", "Order", "Quantity", "Nameset",
-            "Cost Price", "Sale Price", "Profit",
-            "Order Status", "Payment Status", "Tracking Detail", "Date"
-        ])
+    "Customer Name", "Number", "Order", "Quantity", "Nameset",
+    "Cost Price", "Sale Price", "Profit",
+    "Order Status", "Payment Status", "Tracking Detail"
+    ])
+
         df.to_csv(CSV_FILE, index=False)
 
 def load_data():
     return pd.read_csv(CSV_FILE)
 
-def export_charts_to_pdf(figures):
-    pdf_bytes = BytesIO()
-    with PdfPages(pdf_bytes) as pdf:
-        for fig in figures:
-            pdf.savefig(fig, bbox_inches='tight')
-    pdf_bytes.seek(0)
-    return pdf_bytes
 
 def save_data(entries):
     expected_columns = [
-        "Customer Name", "Number", "Order", "Quantity", "Nameset",
-        "Cost Price", "Sale Price", "Profit",
-        "Order Status", "Payment Status", "Tracking Detail", "Date"
+    "Customer Name", "Number", "Order", "Quantity", "Nameset",
+    "Cost Price", "Sale Price", "Profit",
+    "Order Status", "Payment Status", "Tracking Detail"
     ]
 
     df = pd.DataFrame(entries)
@@ -59,15 +50,6 @@ def to_excel(df):
 def summary_dashboard(data):
     st.subheader("Summary Dashboard")
 
-    # Parse and ensure datetime
-    if "Date" not in data.columns or data["Date"].isnull().all():
-        data["Date"] = pd.to_datetime("today")
-    else:
-        data["Date"] = pd.to_datetime(data["Date"], errors="coerce")
-
-    data.dropna(subset=["Date"], inplace=True)
-    data["Month"] = data["Date"].dt.to_period("M").astype(str)
-
     # Summary metrics
     total_orders = len(data)
     data["Quantity"] = pd.to_numeric(data["Quantity"], errors="coerce")
@@ -85,8 +67,6 @@ def summary_dashboard(data):
     - **Total Profit:** ₹{total_profit:,.2f}
     """)
 
-    figs = []
-
     # Monthly aggregation
     monthly_summary = data.groupby("Month").agg({
         "Profit": "sum",
@@ -96,26 +76,21 @@ def summary_dashboard(data):
 
     col1, col2 = st.columns(2)
 
-    # 📉 Profit/Loss over time
+    # Profit/Loss over time
     with col1:
-        fig1, ax1 = plt.subplots()
-        ax1.plot(monthly_summary["Month"], monthly_summary["Profit"], marker='o', color='green')
-        ax1.set_title("💹 Monthly Profit/Loss")
-        ax1.set_ylabel("Profit (₹)")
-        ax1.set_xlabel("Month")
-        ax1.grid(True)
-        st.pyplot(fig1)
-        figs.append(fig1)
+        if not monthly_summary.empty:
+            chart_data = monthly_summary[["Month", "Profit"]].set_index("Month")
+            st.line_chart(chart_data, height=300)
+        else:
+            st.info("Not enough data for profit chart.")
 
-    # 📊 Number of sales per month
+    # Number of sales per month
     with col2:
-        fig2, ax2 = plt.subplots()
-        ax2.bar(monthly_summary["Month"], monthly_summary["Total Orders"], color='orange')
-        ax2.set_title("🛒 Monthly Order Count")
-        ax2.set_ylabel("No. of Orders")
-        ax2.set_xlabel("Month")
-        st.pyplot(fig2)
-        figs.append(fig2)
+        if not monthly_summary.empty:
+            chart_data = monthly_summary[["Month", "Total Orders"]].set_index("Month")
+            st.bar_chart(chart_data, height=300)
+        else:
+            st.info("Not enough data for orders chart.")
 
     # --------- Textual Insights ----------
     st.markdown("Insights")
@@ -134,10 +109,8 @@ def summary_dashboard(data):
         st.write(f"**Total Quantity Sold in Best Month:** {total_qty}")
         st.write(f"**Total Profit in Best Month:** ₹{total_profit_month:,.2f}")
     else:
-        st.info("ℹNot enough data to generate monthly summary.")
+        st.info("ℹ Not enough data to generate monthly summary.")
 
-    pdf_file = export_charts_to_pdf(figs)
-    st.download_button("Download Dashboard Charts (PDF)", data=pdf_file, file_name="dashboard_charts.pdf", mime="application/pdf")
 
 def safe_int(value, default=1):
     try:
@@ -209,8 +182,7 @@ def main():
                             "Profit": profit,
                             "Order Status": status,
                             "Payment Status": payment,
-                            "Tracking Detail": tracking,
-                            "Date": pd.to_datetime(date)
+                            "Tracking Detail": tracking
                         }
                         save_data([new_entry])
                         st.success("Order Added!")
@@ -253,12 +225,7 @@ def main():
                     payment = st.selectbox("Payment Status", payment_status_options, index=payment_index)
 
                     tracking = st.text_input("Tracking Info", row["Tracking Detail"])
-                    try:
-                        date_value = pd.to_datetime(row.get("Date"), errors="coerce").date()
-                    except Exception:
-                        date_value = pd.to_datetime("today").date()
 
-                    date = st.date_input("Order Date", value=date_value)
                     col_save, col_delete = st.columns(2)
                     save = col_save.form_submit_button("Save")
                     delete = col_delete.form_submit_button("Delete")
@@ -266,7 +233,7 @@ def main():
                     if save:
                         data.loc[row_id] = [
                             name, number, order, quantity, nameset,
-                            cost, sale, profit, status, payment, tracking, pd.to_datetime(date)
+                            cost, sale, profit, status, payment, tracking
                         ]
                         data.to_csv(CSV_FILE, index=False)
                         st.success("Order Updated!")
@@ -305,7 +272,7 @@ def main():
             data=pd.DataFrame(columns=[
                 "Customer Name", "Number", "Order", "Quantity", "Nameset",
                 "Cost Price", "Sale Price", "Profit",
-                "Order Status", "Payment Status", "Tracking Detail", "Date"
+                "Order Status", "Payment Status", "Tracking Detail"
             ]).to_csv(index=False).encode("utf-8"),
             file_name="order_template.csv",
             mime="text/csv"
@@ -320,7 +287,7 @@ def main():
                 expected_cols = [
                     "Customer Name", "Number", "Order", "Quantity", "Nameset",
                     "Cost Price", "Sale Price", "Profit",
-                    "Order Status", "Payment Status", "Tracking Detail", "Date"
+                    "Order Status", "Payment Status", "Tracking Detail"
                 ]
 
                 if list(uploaded_df.columns) == expected_cols:
