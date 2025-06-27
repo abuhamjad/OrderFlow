@@ -1,3 +1,0 @@
-Customer Name,Number,Order,Quantity,Nameset,Cost Price,Sale Price,Profit,Order Status,Payment Status,Tracking Detail,Date
-Alice,1234567890,T-shirt,2,Alice,200,300,100,Shipped,Paid,TRK123,2024-06-01
-Bob,9876543210,Hoodie,1,Bob,400,600,200,Delivered,Paid,TRK456,2024-06-05
