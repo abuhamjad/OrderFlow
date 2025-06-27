@@ -18,6 +18,8 @@ def init_csv():
 
 def load_data():
     return pd.read_csv(CSV_FILE)
+    data["Date"] = pd.to_datetime("today")
+    return data
 
 
 def save_data(entries):
@@ -36,10 +38,13 @@ def save_data(entries):
 
     df = df[expected_columns]
 
-    df["Date"] = pd.to_datetime(df["Date"]).dt.date
-
-    df.to_csv(CSV_FILE, mode='a', header=not pd.read_csv(CSV_FILE).shape[0], index=False)
-
+    save_df = df.drop(columns="Date", errors="ignore")
+    save_df.to_csv(
+        CSV_FILE,
+        mode='a',
+        header=not pd.read_csv(CSV_FILE).shape[0],
+        index=False
+    )
 
 def to_excel(df):
     output = BytesIO()
@@ -49,6 +54,21 @@ def to_excel(df):
 
 def summary_dashboard(data):
     st.subheader("Summary Dashboard")
+
+    if "Date" not in data.columns or data["Date"].isnull().all():
+        data["Date"] = pd.to_datetime("today")
+    else:
+        data["Date"] = pd.to_datetime(data["Date"], errors="coerce")
+
+    # Add Month column
+    data["Month"] = data["Date"].dt.to_period("M").astype(str)
+
+    # Monthly aggregation
+    monthly_summary = data.groupby("Month").agg({
+        "Profit": "sum",
+        "Order": "count",
+        "Quantity": "sum"
+    }).rename(columns={"Order": "Total Orders"}).reset_index()
 
     # Summary metrics
     total_orders = len(data)
@@ -182,7 +202,8 @@ def main():
                             "Profit": profit,
                             "Order Status": status,
                             "Payment Status": payment,
-                            "Tracking Detail": tracking
+                            "Tracking Detail": tracking,
+                            "Date": pd.to_datetime(date)
                         }
                         save_data([new_entry])
                         st.success("Order Added!")
@@ -225,6 +246,8 @@ def main():
                     payment = st.selectbox("Payment Status", payment_status_options, index=payment_index)
 
                     tracking = st.text_input("Tracking Info", row["Tracking Detail"])
+                    date = st.date_input("Order Date")
+
 
                     col_save, col_delete = st.columns(2)
                     save = col_save.form_submit_button("Save")
