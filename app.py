@@ -186,7 +186,6 @@ def main():
                 status = st.selectbox("Order Status", ["Pending", "In Production", "Shipped", "Delivered", "Cancelled"])
                 payment = st.selectbox("Payment Status", ["Unpaid", "Partially Paid", "Paid"])
                 tracking = st.text_input("Tracking Info (if any)")
-                date = st.date_input("Order Date")
 
                 submitted = st.form_submit_button("Submit")
                 if submitted:
@@ -203,7 +202,7 @@ def main():
                             "Order Status": status,
                             "Payment Status": payment,
                             "Tracking Detail": tracking,
-                            "Date": pd.to_datetime(date)
+                            "Date": pd.to_datetime("today")
                         }
                         save_data([new_entry])
                         st.success("Order Added!")
