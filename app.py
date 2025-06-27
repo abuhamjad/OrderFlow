@@ -32,21 +32,26 @@ def export_charts_to_pdf(figures):
     pdf_bytes.seek(0)
     return pdf_bytes
 
-def save_data(entry):
-    df = pd.DataFrame([entry])
-    
-    # Add today's date if not already present
-    df["Date"] = pd.to_datetime("today").normalize()
-    
-    # Ensure columns are in correct order
+def save_data(entries):
     expected_columns = [
         "Customer Name", "Number", "Order", "Quantity", "Nameset",
         "Cost Price", "Sale Price", "Profit",
         "Order Status", "Payment Status", "Tracking Detail", "Date"
     ]
+
+    df = pd.DataFrame(entries)
+
+    # Ensure all expected columns are present
+    for col in expected_columns:
+        if col not in df.columns:
+            df[col] = ""
+
     df = df[expected_columns]
 
+    df["Date"] = pd.to_datetime(df["Date"]).dt.date
+
     df.to_csv(CSV_FILE, mode='a', header=not pd.read_csv(CSV_FILE).shape[0], index=False)
+
 
 def to_excel(df):
     output = BytesIO()
@@ -181,9 +186,10 @@ def main():
                 name = col1.text_input("Customer Name")
                 number = col2.text_input("Contact Number")
 
-                order = st.text_input("Order Name")
+                order_input = st.text_area("Order Name(s)")
+                order_list = [o.strip() for o in order_input.replace('\n', ',').split(',') if o.strip()]
                 quantity = st.number_input("Quantity", min_value=1, step=1)
-                nameset = st.text_input("Nameset (optional)")
+                nameset = st.text_input("Nameset")
 
                 col3, col4 = st.columns(2)
                 cost = col3.number_input("Cost Price", min_value=0.0, step=0.1)
@@ -197,11 +203,11 @@ def main():
 
                 submitted = st.form_submit_button("Submit")
                 if submitted:
-                    if name and number and order:
+                    if name and number and order_list:
                         new_entry = {
                             "Customer Name": name,
                             "Number": number,
-                            "Order": order,
+                            "Order": "; ".join(order_list),
                             "Quantity": quantity,
                             "Nameset": nameset,
                             "Cost Price": cost,
@@ -212,7 +218,7 @@ def main():
                             "Tracking Detail": tracking,
                             "Date": pd.to_datetime(date)
                         }
-                        save_data(new_entry)
+                        save_data([new_entry])
                         st.success("✅ Order Added!")
                     else:
                         st.error("❌ Please fill in required fields.")
