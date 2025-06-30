@@ -80,8 +80,10 @@ def save_data(entries):
         current_data = pd.DataFrame(columns=expected_columns)
 
     combined_data = pd.concat([current_data, df], ignore_index=True)
+    combined_data["Date"] = pd.to_datetime(combined_data["Date"], errors="coerce")
+    combined_data = combined_data.sort_values(by="Date").reset_index(drop=True)
 
-    combined_data.to_csv(CSV_FILE, index=False)
+    combined_data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
 
     try:
         upload_to_google_sheets(combined_data)
@@ -102,16 +104,11 @@ def summary_dashboard(data):
         data["Date"] = pd.to_datetime("today")
     else:
         data["Date"] = pd.to_datetime(data["Date"], errors="coerce")
+        data = data.sort_values(by="Date").reset_index(drop=True)
+
 
     # Add Month column
     data["Month"] = data["Date"].dt.to_period("M").astype(str)
-
-    # Monthly aggregation
-    monthly_summary = data.groupby("Month").agg({
-        "Profit": "sum",
-        "Order": "count",
-        "Quantity": "sum"
-    }).rename(columns={"Order": "Total Orders"}).reset_index()
 
     # Summary metrics
     total_orders = len(data)
@@ -198,6 +195,7 @@ def upload_to_google_sheets(df, sheet_name=GOOGLE_SHEET_NAME):
 
     if "Date" in df.columns:
         df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.strftime("%d-%m-%Y")
+        df = df.sort_values(by="Date").reset_index(drop=True)
 
     worksheet.clear()
     worksheet.update(
@@ -250,6 +248,7 @@ def main():
                 status = st.selectbox("Order Status", ["Pending", "In Production", "Shipped", "Delivered", "Cancelled"])
                 payment = st.selectbox("Payment Status", ["Unpaid", "Partially Paid", "Paid"])
                 tracking = st.text_input("Tracking Info (if any)")
+                order_date = st.date_input("Order Date", value=pd.to_datetime("today").date())
 
                 submitted = st.form_submit_button("Submit")
                 if submitted:
@@ -266,7 +265,7 @@ def main():
                             "Order Status": status,
                             "Payment Status": payment,
                             "Tracking Detail": tracking,
-                            "Date": pd.to_datetime("today")
+                            "Date": pd.to_datetime(order_date)
                         }
                         save_data([new_entry])
                         st.success("Order Added!")
@@ -337,14 +336,16 @@ def main():
                         upload_to_google_sheets(data)
                         st.warning("Order Deleted")
             else:
-                st.info("ℹNo orders to modify.")
+                st.info("No orders to modify.")
 
         # All Orders
         with subtab3:
             st.header("All Orders")
             df_display = data.reset_index(drop=True)
             df_display.index += 1  # Start from 1
-            st.dataframe(df_display)
+            if "Date" in df_display.columns:
+                df_display["Date"] = pd.to_datetime(df_display["Date"], errors="coerce").dt.strftime("%d-%m-%Y")
+
 
             # Download Buttons
             csv = df_display.to_csv(index=False).encode('utf-8')
@@ -379,6 +380,10 @@ def main():
                     st.error("Column structure mismatch. Use the provided template.")
             except Exception as e:
                 st.error(f"Error reading file: {e}")
+
+        for col in EXPECTED_COLS:
+            if col not in uploaded_df.columns:
+                uploaded_df[col] = ""
 
         st.download_button(
         label="Download CSV Template",
