@@ -25,58 +25,52 @@ def init_csv():
         df.to_csv(CSV_FILE, index=False)
 
 def load_data():
-    return pd.read_csv(CSV_FILE)
-    data["Date"] = pd.to_datetime("today")
+    try:
+        data = pd.read_csv(CSV_FILE)
+    except FileNotFoundError:
+        data = pd.DataFrame(columns=[
+            "Customer Name", "Number", "Order", "Quantity", "Nameset",
+            "Cost Price", "Sale Price", "Profit",
+            "Order Status", "Payment Status", "Tracking Detail", "Date"
+        ])
+    if "Date" not in data.columns:
+        data["Date"] = pd.to_datetime("today")
+    else:
+        data["Date"] = pd.to_datetime(data["Date"], errors="coerce").fillna(pd.to_datetime("today"))
     return data
-
 
 def save_data(entries):
     expected_columns = [
-    "Customer Name", "Number", "Order", "Quantity", "Nameset",
-    "Cost Price", "Sale Price", "Profit",
-    "Order Status", "Payment Status", "Tracking Detail"
+        "Customer Name", "Number", "Order", "Quantity", "Nameset",
+        "Cost Price", "Sale Price", "Profit",
+        "Order Status", "Payment Status", "Tracking Detail", "Date"
     ]
 
     df = pd.DataFrame(entries)
 
-    # Ensure all expected columns are present
     for col in expected_columns:
         if col not in df.columns:
             df[col] = ""
 
+    if df["Date"].isnull().all():
+        df["Date"] = pd.to_datetime("today")
+
     df = df[expected_columns]
 
-    save_df = df.drop(columns="Date", errors="ignore")
-    save_df.to_csv(
-    CSV_FILE,
-    mode='a',
-    header=not pd.read_csv(CSV_FILE).shape[0],
-    index=False
-)
     try:
-        latest_data = pd.read_csv(CSV_FILE)
-        upload_to_google_sheets(latest_data)
-    except Exception as e:
-        print("Google Sheets upload failed:", e)
+        current_data = pd.read_csv(CSV_FILE)
+    except FileNotFoundError:
+        current_data = pd.DataFrame(columns=expected_columns)
 
+    combined_data = pd.concat([current_data, df], ignore_index=True)
 
-def upload_to_google_sheets(data_frame, sheet_name="orders"):
+    combined_data.to_csv(CSV_FILE, index=False)
+
     try:
-        scope = [
-            "https://spreadsheets.google.com/feeds",
-            "https://www.googleapis.com/auth/drive"
-        ]
-        creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-        client = gspread.authorize(creds)
-
-        sheet = client.open_by_key("1agUjycF9vC-CtRGd4FTvUKoR15aUal4GsLWjJogon4c")
-        worksheet = sheet.worksheet(sheet_name)
-
-        worksheet.clear()  # Clear old data
-        worksheet.update([data_frame.columns.values.tolist()] + data_frame.values.tolist())
-        print("Data uploaded to Google Sheets.")
+        upload_to_google_sheets(combined_data)
+        st.success("✅ Data saved locally and uploaded to Google Sheets.")
     except Exception as e:
-        print(f"Failed to upload to Google Sheets: {e}")
+        st.error(f"Google Sheets upload failed: {e}")
 
 def to_excel(df):
     output = BytesIO()
@@ -190,6 +184,9 @@ def upload_to_google_sheets(df, sheet_name=GOOGLE_SHEET_NAME):
     except gspread.exceptions.WorksheetNotFound:
         worksheet = sheet.add_worksheet(title=sheet_name, rows="1000", cols="20")
 
+    if "Date" in df.columns:
+        df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.strftime("%d-%m-%Y")
+
     worksheet.clear()
     worksheet.update(
         [df.columns.values.tolist()] + df.fillna("").values.tolist()
@@ -300,8 +297,9 @@ def main():
                     payment = st.selectbox("Payment Status", payment_status_options, index=payment_index)
 
                     tracking = st.text_input("Tracking Info", row["Tracking Detail"])
-                    date = st.date_input("Order Date")
-
+                    date = st.date_input(
+                    "Order Date",
+                    value=row["Date"].date() if pd.notnull(row["Date"]) else pd.to_datetime("today").date())
 
                     col_save, col_delete = st.columns(2)
                     save = col_save.form_submit_button("Save")
@@ -309,9 +307,10 @@ def main():
 
                     if save:
                         data.loc[row_id] = [
-                            name, number, order, quantity, nameset,
-                            cost, sale, profit, status, payment, tracking
-                        ]
+                        name, number, order, quantity, nameset,
+                        cost, sale, profit, status, payment, tracking,
+                        pd.to_datetime(date)]
+
                         data.to_csv(CSV_FILE, index=False)
                         st.success("Order Updated!")
 
@@ -319,7 +318,7 @@ def main():
                         st.success("Order Updated!")
 
                     if delete:
-                        data = data.drop(index=row_id)
+                        data = data.drop(index=row_id).reset_index(drop=True)
                         data.to_csv(CSV_FILE, index=False)
                         st.warning("Order Deleted")
 
@@ -351,15 +350,10 @@ def main():
         st.header("Import Orders from CSV")
 
         st.download_button(
-            label="Download CSV Template",
-            data=pd.DataFrame(columns=[
-                "Customer Name", "Number", "Order", "Quantity", "Nameset",
-                "Cost Price", "Sale Price", "Profit",
-                "Order Status", "Payment Status", "Tracking Detail"
-            ]).to_csv(index=False).encode("utf-8"),
-            file_name="order_template.csv",
-            mime="text/csv"
-        )
+        label="Download CSV Template",
+        data=pd.DataFrame(columns=expected_cols).to_csv(index=False).encode("utf-8"),
+        file_name="order_template.csv",
+        mime="text/csv")
 
         uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
         if uploaded_file:
@@ -368,10 +362,9 @@ def main():
                 st.dataframe(uploaded_df)
 
                 expected_cols = [
-                    "Customer Name", "Number", "Order", "Quantity", "Nameset",
-                    "Cost Price", "Sale Price", "Profit",
-                    "Order Status", "Payment Status", "Tracking Detail"
-                ]
+                "Customer Name", "Number", "Order", "Quantity", "Nameset",
+                "Cost Price", "Sale Price", "Profit",
+                "Order Status", "Payment Status", "Tracking Detail", "Date"]
 
                 if list(uploaded_df.columns) == expected_cols:
                     if st.button("Import Orders"):
