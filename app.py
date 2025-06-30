@@ -7,6 +7,9 @@ IS_TEST = query_params.get("test", "0") == "1"
 
 CSV_FILE = "sample_orders.csv" if IS_TEST else "orders.csv"
 
+GOOGLE_SHEET_ID = "1agUjycF9vC-CtRGd4FTvUKoR15aUal4GsLWjJogon4c"
+GOOGLE_SHEET_NAME = "order-flow-data"
+
 def init_csv():
     try:
         pd.read_csv(CSV_FILE)
