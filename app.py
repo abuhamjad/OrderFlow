@@ -3,6 +3,7 @@ import pandas as pd
 from io import BytesIO
 import gspread
 from google.oauth2.service_account import Credentials
+import plotly.express as px
 
 query_params = st.query_params
 IS_TEST = query_params.get("test", "0") == "1"
@@ -102,7 +103,7 @@ def safe_float(value, default=0.0):
 # Summary Dashboard
 # ------------------------
 def summary_dashboard(data):
-    st.subheader("Summary Dashboard")
+    st.subheader("📊 Summary Dashboard")
 
     if "Date" not in data.columns or data["Date"].isnull().all():
         data["Date"] = pd.to_datetime("today")
@@ -138,17 +139,49 @@ def summary_dashboard(data):
 
     with col1:
         if not monthly_summary.empty:
-            chart_data = monthly_summary[["Month", "Profit"]].set_index("Month")
-            st.line_chart(chart_data, height=300)
+            fig = px.line(
+            monthly_summary,
+            x="Month",
+            y="Profit",
+            markers=True,
+            line_shape="spline",
+            title="📈 Profit Trend",
+            template="simple_white",
+            color_discrete_sequence=["#0099ff"])
+
+            fig.update_traces(line=dict(width=3))
+            fig.update_layout(
+            title_font_size=20,
+            title_x=0.5,
+            font=dict(size=14, color="#333"),
+            height=300,
+            margin=dict(l=10, r=10, t=40, b=10),)
+
+            st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Not enough data for profit chart.")
 
     with col2:
-        if not monthly_summary.empty:
-            chart_data = monthly_summary[["Month", "Total Orders"]].set_index("Month")
-            st.bar_chart(chart_data, height=300)
-        else:
-            st.info("Not enough data for orders chart.")
+            if not monthly_summary.empty:
+                fig = px.bar(
+                monthly_summary,
+                x="Month",
+                y="Total Orders",
+                title="📊 Monthly Orders",
+                template="simple_white",
+                color_discrete_sequence=["#ff7f0e"]
+            )
+                fig.update_traces(marker_line_width=1, marker_line_color="#333")
+                fig.update_layout(
+                title_font_size=20,
+                title_x=0.5,
+                font=dict(size=14, color="#333"),
+                height=300,
+                margin=dict(l=10, r=10, t=40, b=10),
+            )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Not enough data for orders chart.")
 
     st.markdown("Insights")
 
@@ -173,7 +206,7 @@ def summary_dashboard(data):
 # ------------------------
 def main():
     st.set_page_config(page_title="Order Manager", layout="wide")
-    st.title("Order Flow")
+    st.title("🧾 Order Flow")
 
     if IS_TEST:
         st.warning("You are currently running in TEST MODE. Data changes will not affect the live system.")
@@ -182,17 +215,17 @@ def main():
     data = load_data_from_google_sheets()
     data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
 
-    tab1, tab2, tab3 = st.tabs(["Manage Orders", "Dashboard", "All Orders"])
+    tab1, tab2, tab3 = st.tabs(["📝 Manage Orders", "📊 Dashboard", "📋 All Orders"])
 
     # --------------------
     # Tab 1 - Manage Orders
     # --------------------
     with tab1:
-        subtab1, subtab2 = st.tabs(["Add Order", "Edit/Delete"])
+        subtab1, subtab2 = st.tabs(["➕ Add Order", "✏️ Edit/Delete"])
 
         # Add Order
         with subtab1:
-            st.header("Add New Order")
+            st.header("➕ Add New Order")
             with st.form("add_order_form"):
                 col1, col2 = st.columns(2)
                 name = col1.text_input("Customer Name")
@@ -234,12 +267,15 @@ def main():
                         upload_to_google_sheets(data)
                         data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
                         st.success("Order Added!")
+
+                        st.experimental_rerun()
+
                     else:
                         st.error("Please fill in required fields.")
 
         # Edit/Delete Orders
         with subtab2:
-            st.header("Edit / Delete Orders")
+            st.header("✏️ Edit / Delete Orders")
 
             if not data.empty:
                 row_id = st.selectbox(
@@ -311,7 +347,7 @@ def main():
     # Tab 3 - All Orders
     # --------------------
     with tab3:
-        st.header("All Orders")
+        st.header("📋 All Orders")
 
         df_display = data.reset_index(drop=True)
         df_display.index += 1
