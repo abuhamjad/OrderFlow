@@ -1,11 +1,16 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 query_params = st.query_params
 IS_TEST = query_params.get("test", "0") == "1"
 
 CSV_FILE = "sample_orders.csv" if IS_TEST else "orders.csv"
+
+GOOGLE_SHEET_ID = "1agUjycF9vC-CtRGd4FTvUKoR15aUal4GsLWjJogon4c"
+GOOGLE_SHEET_NAME = "order-flow-data"
 
 def init_csv():
     try:
@@ -43,11 +48,35 @@ def save_data(entries):
 
     save_df = df.drop(columns="Date", errors="ignore")
     save_df.to_csv(
-        CSV_FILE,
-        mode='a',
-        header=not pd.read_csv(CSV_FILE).shape[0],
-        index=False
-    )
+    CSV_FILE,
+    mode='a',
+    header=not pd.read_csv(CSV_FILE).shape[0],
+    index=False
+)
+    try:
+        latest_data = pd.read_csv(CSV_FILE)
+        upload_to_google_sheets(latest_data)
+    except Exception as e:
+        print("Google Sheets upload failed:", e)
+
+
+def upload_to_google_sheets(data_frame, sheet_name="orders"):
+    try:
+        scope = [
+            "https://spreadsheets.google.com/feeds",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+        client = gspread.authorize(creds)
+
+        sheet = client.open_by_key("1agUjycF9vC-CtRGd4FTvUKoR15aUal4GsLWjJogon4c")
+        worksheet = sheet.worksheet(sheet_name)
+
+        worksheet.clear()  # Clear old data
+        worksheet.update([data_frame.columns.values.tolist()] + data_frame.values.tolist())
+        print("Data uploaded to Google Sheets.")
+    except Exception as e:
+        print(f"Failed to upload to Google Sheets: {e}")
 
 def to_excel(df):
     output = BytesIO()
@@ -132,7 +161,7 @@ def summary_dashboard(data):
         st.write(f"**Total Quantity Sold in Best Month:** {total_qty}")
         st.write(f"**Total Profit in Best Month:** ₹{total_profit_month:,.2f}")
     else:
-        st.info("ℹ Not enough data to generate monthly summary.")
+        st.info("Not enough data to generate monthly summary.")
 
 
 def safe_int(value, default=1):
@@ -146,6 +175,26 @@ def safe_float(value, default=0.0):
         return float(value)
     except (ValueError, TypeError):
         return default
+    
+def upload_to_google_sheets(df, sheet_name=GOOGLE_SHEET_NAME):
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    client = gspread.authorize(creds)
+
+    sheet = client.open_by_key(GOOGLE_SHEET_ID)
+    try:
+        worksheet = sheet.worksheet(sheet_name)
+    except gspread.exceptions.WorksheetNotFound:
+        worksheet = sheet.add_worksheet(title=sheet_name, rows="1000", cols="20")
+
+    worksheet.clear()
+    worksheet.update(
+        [df.columns.values.tolist()] + df.fillna("").values.tolist()
+    )
+    print("✅ Google Sheets updated.")
 
 
 def main():
@@ -266,9 +315,15 @@ def main():
                         data.to_csv(CSV_FILE, index=False)
                         st.success("Order Updated!")
 
+                        upload_to_google_sheets(data)
+                        st.success("Order Updated!")
+
                     if delete:
                         data = data.drop(index=row_id)
                         data.to_csv(CSV_FILE, index=False)
+                        st.warning("Order Deleted")
+
+                        upload_to_google_sheets(data)
                         st.warning("Order Deleted")
             else:
                 st.info("ℹNo orders to modify.")
@@ -322,6 +377,9 @@ def main():
                     if st.button("Import Orders"):
                         combined = pd.concat([data, uploaded_df], ignore_index=True)
                         combined.to_csv(CSV_FILE, index=False)
+
+                        upload_to_google_sheets(combined)
+
                         st.success("Orders Imported Successfully!")
                 else:
                     st.error("Column structure mismatch. Use the provided template.")
