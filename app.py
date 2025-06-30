@@ -225,7 +225,7 @@ def main():
 
         # Add Order
         with subtab1:
-            st.header("➕ Add New Order")
+            st.header("Add New Order")
             with st.form("add_order_form"):
                 col1, col2 = st.columns(2)
                 name = col1.text_input("Customer Name")
@@ -275,7 +275,7 @@ def main():
 
         # Edit/Delete Orders
         with subtab2:
-            st.header("✏️ Edit / Delete Orders")
+            st.header("Edit / Delete Orders")
 
             if not data.empty:
                 row_id = st.selectbox(
