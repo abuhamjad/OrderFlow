@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import json
+from google.oauth2.service_account import Credentials
 
 query_params = st.query_params
 IS_TEST = query_params.get("test", "0") == "1"
@@ -12,12 +13,22 @@ CSV_FILE = "sample_orders.csv" if IS_TEST else "orders.csv"
 GOOGLE_SHEET_ID = "1agUjycF9vC-CtRGd4FTvUKoR15aUal4GsLWjJogon4c"
 GOOGLE_SHEET_NAME = "order-flow-data"
 
+def get_gspread_client():
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/spreadsheets"
+    ]
+    service_account_info = json.loads(st.secrets["gcp_service_account"])
+    creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
+    return gspread.authorize(creds)
+
+
 EXPECTED_COLS = [
     "Customer Name", "Number", "Order", "Quantity", "Nameset",
     "Cost Price", "Sale Price", "Profit",
     "Order Status", "Payment Status", "Tracking Detail"
 ]
-
 
 def init_csv():
     try:
@@ -178,14 +189,9 @@ def safe_float(value, default=0.0):
         return default
     
 def upload_to_google_sheets(df, sheet_name=GOOGLE_SHEET_NAME):
-    scope = [
-        "https://spreadsheets.google.com/feeds",
-        "https://www.googleapis.com/auth/drive"
-    ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-    client = gspread.authorize(creds)
-
+    client = get_gspread_client()
     sheet = client.open_by_key(GOOGLE_SHEET_ID)
+
     try:
         worksheet = sheet.worksheet(sheet_name)
     except gspread.exceptions.WorksheetNotFound:
