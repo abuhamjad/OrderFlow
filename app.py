@@ -12,6 +12,13 @@ CSV_FILE = "sample_orders.csv" if IS_TEST else "orders.csv"
 GOOGLE_SHEET_ID = "1agUjycF9vC-CtRGd4FTvUKoR15aUal4GsLWjJogon4c"
 GOOGLE_SHEET_NAME = "order-flow-data"
 
+EXPECTED_COLS = [
+    "Customer Name", "Number", "Order", "Quantity", "Nameset",
+    "Cost Price", "Sale Price", "Profit",
+    "Order Status", "Payment Status", "Tracking Detail"
+]
+
+
 def init_csv():
     try:
         pd.read_csv(CSV_FILE)
@@ -355,12 +362,7 @@ def main():
                 uploaded_df = pd.read_csv(uploaded_file)
                 st.dataframe(uploaded_df)
 
-                expected_cols = [
-                "Customer Name", "Number", "Order", "Quantity", "Nameset",
-                "Cost Price", "Sale Price", "Profit",
-                "Order Status", "Payment Status", "Tracking Detail", "Date"]
-
-                if list(uploaded_df.columns) == expected_cols:
+                if list(uploaded_df.columns) == EXPECTED_COLS:
                     if st.button("Import Orders"):
                         combined = pd.concat([data, uploaded_df], ignore_index=True)
                         combined.to_csv(CSV_FILE, index=False)
@@ -375,7 +377,7 @@ def main():
 
         st.download_button(
         label="Download CSV Template",
-        data=pd.DataFrame(columns=expected_cols).to_csv(index=False).encode("utf-8"),
+        data=pd.DataFrame(columns=EXPECTED_COLS).to_csv(index=False).encode("utf-8"),
         file_name="order_template.csv",
         mime="text/csv")
                 
