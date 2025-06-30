@@ -268,7 +268,7 @@ def main():
                         data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
                         st.success("Order Added!")
 
-                        st.experimental_rerun()
+                        st.rerun()
 
                     else:
                         st.error("Please fill in required fields.")
