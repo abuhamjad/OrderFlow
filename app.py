@@ -349,12 +349,6 @@ def main():
     with tab3:
         st.header("Import Orders from CSV")
 
-        st.download_button(
-        label="Download CSV Template",
-        data=pd.DataFrame(columns=expected_cols).to_csv(index=False).encode("utf-8"),
-        file_name="order_template.csv",
-        mime="text/csv")
-
         uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
         if uploaded_file:
             try:
@@ -378,6 +372,12 @@ def main():
                     st.error("Column structure mismatch. Use the provided template.")
             except Exception as e:
                 st.error(f"Error reading file: {e}")
+
+        st.download_button(
+        label="Download CSV Template",
+        data=pd.DataFrame(columns=expected_cols).to_csv(index=False).encode("utf-8"),
+        file_name="order_template.csv",
+        mime="text/csv")
                 
 if __name__ == "__main__":
     main()
