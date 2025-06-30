@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import gspread
-import json
 from google.oauth2.service_account import Credentials
 
 query_params = st.query_params
@@ -19,7 +18,7 @@ def get_gspread_client():
         "https://www.googleapis.com/auth/drive",
         "https://www.googleapis.com/auth/spreadsheets"
     ]
-    service_account_info = json.loads(st.secrets["gcp_service_account"])
+    service_account_info = dict(st.secrets["gcp_service_account"])
     creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
     return gspread.authorize(creds)
 
