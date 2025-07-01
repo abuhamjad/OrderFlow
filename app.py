@@ -5,12 +5,14 @@ import gspread
 from google.oauth2.service_account import Credentials
 import plotly.express as px
 
+st.set_page_config(page_title="Order Manager", layout="wide")
+
 # ------------------------
 # Config
 # ------------------------
 USERS = {
     "admin": {
-        "password": "adminpass",
+        "password": "kamikaze@1301",
         "sheet_id": "1agUjycF9vC-CtRGd4FTvUKoR15aUal4GsLWjJogon4c",
         "csv_file": "orders.csv"
     },
@@ -20,7 +22,7 @@ USERS = {
         "csv_file": "sample_orders.csv"
     }
 }
-GOOGLE_SHEET_NAME = "order-flow-data"
+GOOGLE_SHEET_NAME = "order-flow-test"
 
 EXPECTED_COLS = [
     "Customer Name", "Number", "Order", "Quantity", "Nameset",
@@ -214,31 +216,43 @@ def summary_dashboard(data):
 # Login Page
 # ------------------------
 def login_page():
-    st.set_page_config(page_title="Login", layout="centered")
     st.title("🔐 Login")
 
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
 
     if not st.session_state.logged_in:
-        with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            submitted = st.form_submit_button("Login")
+        col1, col2 = st.columns(2)
 
-            if submitted:
-                if username in USERS and USERS[username]["password"] == password:
-                    st.session_state.logged_in = True
-                    st.session_state.username = username
-                    st.success(f"Welcome, {username}!")
-                    st.rerun()
-                else:
-                    st.error("Invalid username or password.")
+        with col1:
+            with st.form("login_form"):
+                username = st.text_input("Username")
+                password = st.text_input("Password", type="password")
+                submitted = st.form_submit_button("Login")
+
+                if submitted:
+                    if username in USERS and USERS[username]["password"] == password:
+                        st.session_state.logged_in = True
+                        st.session_state.username = username
+                        st.success(f"Welcome, {username}!")
+                        st.rerun()
+                    else:
+                        st.error("Invalid username or password.")
+
+        with col2:
+            st.markdown("### Quick Login")
+            if st.button("🔓 Login as Test User"):
+                st.session_state.logged_in = True
+                st.session_state.username = "test"
+                st.success("Logged in as test user!")
+                st.rerun()
+
     else:
-        st.info(f"Logged in as {st.session_state.username}")
+        st.info(f"Logged in as **{st.session_state.username}**")
         if st.button("Logout"):
             st.session_state.clear()
             st.rerun()
+
 
 # ------------------------
 # Main App
@@ -249,7 +263,6 @@ def main():
     if st.session_state["username"] == "test":
         st.warning("⚠️ You are in TEST MODE. Changes will not affect live data.")
 
-    st.set_page_config(page_title="Order Manager", layout="wide")
     st.title("🧾 Order Flow")
 
     # Load from Google Sheets
