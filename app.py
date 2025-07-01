@@ -408,7 +408,8 @@ def main():
         st.download_button("Download Excel", xlsx, file_name="orders.xlsx",
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-if __name__ == "__main__":
-    login_page()
-    if st.session_state.get("logged_in", False):
-        main()
+login_page()
+
+if st.session_state.get("logged_in", False):
+    main()
+
