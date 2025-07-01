@@ -218,7 +218,7 @@ def summary_dashboard(data):
 # Login Page
 # ------------------------
 def login_page():
-    st.title("🔐 Login")
+    st.title("Login")
 
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
@@ -243,7 +243,7 @@ def login_page():
 
         with col2:
             st.markdown("### Quick Login")
-            if st.button("🔓 Login as Test User"):
+            if st.button("Login as Test User"):
                 st.session_state.logged_in = True
                 st.session_state.username = "test"
                 st.success("Logged in as test user!")
