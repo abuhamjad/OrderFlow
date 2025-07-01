@@ -261,7 +261,6 @@ def login_page():
 # ------------------------
 def main():
 
-    st.info(f"You are logged in as **{st.session_state['username']}**")
     if st.session_state["username"] == "test":
         st.warning("⚠️ You are in TEST MODE. Changes will not affect live data.")
 
