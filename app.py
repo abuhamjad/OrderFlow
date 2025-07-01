@@ -5,12 +5,21 @@ import gspread
 from google.oauth2.service_account import Credentials
 import plotly.express as px
 
-query_params = st.query_params
-IS_TEST = query_params.get("test", "0") == "1"
-
-CSV_FILE = "sample_orders.csv" if IS_TEST else "orders.csv"
-
-GOOGLE_SHEET_ID = "1agUjycF9vC-CtRGd4FTvUKoR15aUal4GsLWjJogon4c"
+# ------------------------
+# Config
+# ------------------------
+USERS = {
+    "admin": {
+        "password": "adminpass",
+        "sheet_id": "1agUjycF9vC-CtRGd4FTvUKoR15aUal4GsLWjJogon4c",
+        "csv_file": "orders.csv"
+    },
+    "test": {
+        "password": "testpass",
+        "sheet_id": "1jRVGMtSsfupWb5Ctz4Gqkbyd2n6H142q648M93_u8T4",
+        "csv_file": "sample_orders.csv"
+    }
+}
 GOOGLE_SHEET_NAME = "order-flow-data"
 
 EXPECTED_COLS = [
@@ -35,18 +44,16 @@ def get_gspread_client():
 # ------------------------
 # Load from Google Sheets
 # ------------------------
-def load_data_from_google_sheets(sheet_name=GOOGLE_SHEET_NAME):
+def load_data_from_google_sheets(google_sheet_id, sheet_name=GOOGLE_SHEET_NAME):
     client = get_gspread_client()
-    sheet = client.open_by_key(GOOGLE_SHEET_ID)
+    sheet = client.open_by_key(google_sheet_id)
     worksheet = sheet.worksheet(sheet_name)
 
     rows = worksheet.get_all_values()
     if not rows or len(rows) < 2:
-        # Empty sheet
         return pd.DataFrame(columns=EXPECTED_COLS)
     else:
         df = pd.DataFrame(rows[1:], columns=rows[0])
-        # Convert numeric columns
         for col in ["Quantity", "Cost Price", "Sale Price", "Profit"]:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -54,12 +61,13 @@ def load_data_from_google_sheets(sheet_name=GOOGLE_SHEET_NAME):
             df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
         return df
 
+
 # ------------------------
 # Upload to Google Sheets
 # ------------------------
-def upload_to_google_sheets(df, sheet_name=GOOGLE_SHEET_NAME):
+def upload_to_google_sheets(df, google_sheet_id, sheet_name=GOOGLE_SHEET_NAME):
     client = get_gspread_client()
-    sheet = client.open_by_key(GOOGLE_SHEET_ID)
+    sheet = client.open_by_key(google_sheet_id)
 
     try:
         worksheet = sheet.worksheet(sheet_name)
@@ -74,6 +82,7 @@ def upload_to_google_sheets(df, sheet_name=GOOGLE_SHEET_NAME):
         [df_sorted.columns.values.tolist()] + df_sorted.fillna("").values.tolist()
     )
     print("✅ Google Sheets updated.")
+
 
 # ------------------------
 # Excel Export
@@ -202,18 +211,54 @@ def summary_dashboard(data):
         st.info("Not enough data to generate monthly summary.")
 
 # ------------------------
+# Login Page
+# ------------------------
+def login_page():
+    st.set_page_config(page_title="Login", layout="centered")
+    st.title("🔐 Login")
+
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+
+    if not st.session_state.logged_in:
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submitted = st.form_submit_button("Login")
+
+            if submitted:
+                if username in USERS and USERS[username]["password"] == password:
+                    st.session_state.logged_in = True
+                    st.session_state.username = username
+                    st.success(f"Welcome, {username}!")
+                    st.rerun()
+                else:
+                    st.error("Invalid username or password.")
+    else:
+        st.info(f"Logged in as {st.session_state.username}")
+        if st.button("Logout"):
+            st.session_state.clear()
+            st.experimental_rerun()
+
+# ------------------------
 # Main App
 # ------------------------
 def main():
+
+    st.info(f"You are logged in as **{st.session_state['username']}**")
+    if st.session_state["username"] == "test":
+        st.warning("⚠️ You are in TEST MODE. Changes will not affect live data.")
+
     st.set_page_config(page_title="Order Manager", layout="wide")
     st.title("🧾 Order Flow")
 
-    if IS_TEST:
-        st.warning("You are currently running in TEST MODE. Data changes will not affect the live system.")
-
     # Load from Google Sheets
-    data = load_data_from_google_sheets()
+    GOOGLE_SHEET_ID = USERS[st.session_state["username"]]["sheet_id"]
+    CSV_FILE = USERS[st.session_state["username"]]["csv_file"]
+
+    data = load_data_from_google_sheets(GOOGLE_SHEET_ID)
     data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
+
 
     tab1, tab2, tab3 = st.tabs(["📝 Manage Orders", "📊 Dashboard", "📋 All Orders"])
 
@@ -264,7 +309,7 @@ def main():
                             "Date": pd.to_datetime(order_date)
                         }
                         data = pd.concat([data, pd.DataFrame([new_entry])], ignore_index=True)
-                        upload_to_google_sheets(data)
+                        upload_to_google_sheets(data, GOOGLE_SHEET_ID)
                         data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
                         st.success("Order Added!")
 
@@ -324,13 +369,13 @@ def main():
                             cost, sale, profit, status, payment, tracking,
                             pd.to_datetime(date)
                         ]
-                        upload_to_google_sheets(data)
+                        upload_to_google_sheets(data, GOOGLE_SHEET_ID)
                         data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
                         st.success("Order Updated!")
 
                     if delete:
                         data = data.drop(index=row_id).reset_index(drop=True)
-                        upload_to_google_sheets(data)
+                        upload_to_google_sheets(data, GOOGLE_SHEET_ID)
                         data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
                         st.warning("Order Deleted")
 
@@ -364,4 +409,6 @@ def main():
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 if __name__ == "__main__":
-    main()
+    login_page()
+    if st.session_state.get("logged_in", False):
+        main()
