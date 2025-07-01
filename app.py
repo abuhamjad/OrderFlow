@@ -14,15 +14,17 @@ USERS = {
     "admin": {
         "password": "kamikaze@1301",
         "sheet_id": "1agUjycF9vC-CtRGd4FTvUKoR15aUal4GsLWjJogon4c",
+        "sheet_name": "order-flow-data",
         "csv_file": "orders.csv"
     },
     "test": {
         "password": "testpass",
         "sheet_id": "1jRVGMtSsfupWb5Ctz4Gqkbyd2n6H142q648M93_u8T4",
+        "sheet_name": "order-flow-test",
         "csv_file": "sample_orders.csv"
     }
 }
-GOOGLE_SHEET_NAME = "order-flow-test"
+
 
 EXPECTED_COLS = [
     "Customer Name", "Number", "Order", "Quantity", "Nameset",
@@ -46,7 +48,7 @@ def get_gspread_client():
 # ------------------------
 # Load from Google Sheets
 # ------------------------
-def load_data_from_google_sheets(google_sheet_id, sheet_name=GOOGLE_SHEET_NAME):
+def load_data_from_google_sheets(google_sheet_id, sheet_name):
     client = get_gspread_client()
     sheet = client.open_by_key(google_sheet_id)
     worksheet = sheet.worksheet(sheet_name)
@@ -67,7 +69,7 @@ def load_data_from_google_sheets(google_sheet_id, sheet_name=GOOGLE_SHEET_NAME):
 # ------------------------
 # Upload to Google Sheets
 # ------------------------
-def upload_to_google_sheets(df, google_sheet_id, sheet_name=GOOGLE_SHEET_NAME):
+def upload_to_google_sheets(df, google_sheet_id, sheet_name):
     client = get_gspread_client()
     sheet = client.open_by_key(google_sheet_id)
 
@@ -268,8 +270,9 @@ def main():
     # Load from Google Sheets
     GOOGLE_SHEET_ID = USERS[st.session_state["username"]]["sheet_id"]
     CSV_FILE = USERS[st.session_state["username"]]["csv_file"]
+    GOOGLE_SHEET_NAME = USERS[st.session_state["username"]]["sheet_name"]
 
-    data = load_data_from_google_sheets(GOOGLE_SHEET_ID)
+    data = load_data_from_google_sheets(GOOGLE_SHEET_ID, GOOGLE_SHEET_NAME)
     data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
 
 
@@ -322,7 +325,7 @@ def main():
                             "Date": pd.to_datetime(order_date)
                         }
                         data = pd.concat([data, pd.DataFrame([new_entry])], ignore_index=True)
-                        upload_to_google_sheets(data, GOOGLE_SHEET_ID)
+                        upload_to_google_sheets(data, GOOGLE_SHEET_ID, GOOGLE_SHEET_NAME)
                         data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
                         st.success("Order Added!")
 
@@ -382,13 +385,13 @@ def main():
                             cost, sale, profit, status, payment, tracking,
                             pd.to_datetime(date)
                         ]
-                        upload_to_google_sheets(data, GOOGLE_SHEET_ID)
+                        upload_to_google_sheets(data, GOOGLE_SHEET_ID, GOOGLE_SHEET_NAME)
                         data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
                         st.success("Order Updated!")
 
                     if delete:
                         data = data.drop(index=row_id).reset_index(drop=True)
-                        upload_to_google_sheets(data, GOOGLE_SHEET_ID)
+                        upload_to_google_sheets(data, GOOGLE_SHEET_ID, GOOGLE_SHEET_NAME)
                         data.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
                         st.warning("Order Deleted")
 
