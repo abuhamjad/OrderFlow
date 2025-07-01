@@ -238,7 +238,7 @@ def login_page():
         st.info(f"Logged in as {st.session_state.username}")
         if st.button("Logout"):
             st.session_state.clear()
-            st.experimental_rerun()
+            st.rerun()
 
 # ------------------------
 # Main App
