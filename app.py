@@ -4,13 +4,12 @@ from io import BytesIO
 import gspread
 from google.oauth2.service_account import Credentials
 import plotly.express as px
-from dotenv import load_dotenv
-import os
 
-load_dotenv()
+username = st.secrets["APP_USERNAME"]
+password = st.secrets["APP_PASSWORD"]
 
-username = os.getenv("APP_USERNAME")
-password = os.getenv("APP_PASSWORD")
+if not username or not password:
+    st.warning("⚠️ Environment variables for username or password not set!")
 
 st.set_page_config(page_title="Order Manager", layout="wide")
 
