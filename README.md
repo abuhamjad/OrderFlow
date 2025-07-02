@@ -49,6 +49,11 @@ pip install streamlit pandas matplotlib openpyxl
 streamlit run app.py
 ```
 
+### Test My App:
+```bash
+https://orderflow-main.streamlit.app/
+```
+
 ### License
 This project is open-source and free to use. Feel free to modify and customize it for your own use.
 
