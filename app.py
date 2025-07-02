@@ -4,6 +4,13 @@ from io import BytesIO
 import gspread
 from google.oauth2.service_account import Credentials
 import plotly.express as px
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+username = os.getenv("APP_USERNAME")
+password = os.getenv("APP_PASSWORD")
 
 st.set_page_config(page_title="Order Manager", layout="wide")
 
@@ -11,14 +18,14 @@ st.set_page_config(page_title="Order Manager", layout="wide")
 # Config
 # ------------------------
 USERS = {
-    "admin": {
-        "password": "kamikaze@1301",
+    username: {
+        "password": password,
         "sheet_id": "1agUjycF9vC-CtRGd4FTvUKoR15aUal4GsLWjJogon4c",
         "sheet_name": "order-flow-data",
         "csv_file": "orders.csv"
     },
     "test": {
-        "password": "testpass",
+        "password": "",
         "sheet_id": "1jRVGMtSsfupWb5Ctz4Gqkbyd2n6H142q648M93_u8T4",
         "sheet_name": "order-flow-test",
         "csv_file": "sample_orders.csv"
@@ -250,7 +257,7 @@ def login_page():
                 st.rerun()
 
     else:
-        st.info(f"Logged in as **{st.session_state.username}**")
+        st.toast(f"Logged in as **{st.session_state.username}**")
         if st.button("Logout"):
             st.session_state.clear()
             st.rerun()
